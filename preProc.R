@@ -42,5 +42,5 @@ undergrad = undergrad %>% filter(., md_earnings_10 != "NULL")
 undergrad = undergrad %>% filter(., md_earnings_10 != "PrivacySuppressed")
 
 # Save new file as rds file
-saveRDS(undergrad, file="undergrad.Rda")
+saveRDS(undergrad, file="data.Rda")
 
