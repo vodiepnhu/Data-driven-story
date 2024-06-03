@@ -31,5 +31,9 @@ This project utilizes advanced visualization tools to depict the intricate and m
 ### Usage
 To interact with the visualizations, users can select different data points and adjust filters to view specific subsets of data. The visualizations are designed to provide real-time updates and accurate depictions of the extensive information available in the Scorecard dataset.
 
+### Demo
+You can interact with the live visualizations by visiting the following link: [Shiny App Demo](https://vodiepnhu.shinyapps.io/myshiny/)
+
+
 ### Conclusion
 The visualizations developed in this project provide valuable insights into the outcomes of higher education, helping students, families, and policymakers make informed decisions based on a comprehensive analysis of institutional performance.
