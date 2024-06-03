@@ -7,7 +7,7 @@ library(leaflet)
 library(DT)
 library(maps)
 library(plotly)
-
+library(leaflet)
 shinyUI(dashboardPage(
   skin = "blue",
   dashboardHeader(
@@ -19,6 +19,56 @@ shinyUI(dashboardPage(
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
     ),
+    fluidRow(
+      column(
+        3,
+        checkboxGroupInput(
+          "variables",
+          "Choose variables to display:",
+          choices = c(
+            "Average Cost" = "avg_cost",
+            "Median Debt" = "md_debt",
+            "Median Earnings" = "md_earnings_10"
+          ),
+          selected = c("avg_cost", "md_debt", "md_earnings_10")
+        ),
+        sliderInput(
+          "size",
+          "Point Size:",
+          min = 0.1,
+          max = 5,
+          value = 2.5,
+          step = 0.1
+        )
+      ),
+      column(9, leafletOutput("map"))
+    ),
+    
+    fluidRow(column(
+      3, selectInput(
+        "schoolType",
+        "School Type",
+        choices = c(
+          "Public" = "1",
+          "Private" = "2",
+          "For-profit" = "3"
+        )
+      )
+    ), column(
+      9,
+      htmlOutput("boxPlot"),
+      tabsetPanel(
+        type = "tabs",
+        tabPanel(
+          "Rates",
+          plotOutput("rates_plot", width = "800px", height = "400px")
+        ),
+        tabPanel(
+          "Degrees",
+          plotOutput("degs_plot", width = "800px", height = "400px")
+        )
+      )
+    )),
     fluidRow(
       column(
         3,
@@ -46,31 +96,7 @@ shinyUI(dashboardPage(
       ),
       column(9, htmlOutput("scatterPlot"))
     ),
-    fluidRow(column(
-      3, selectInput(
-        "schoolType",
-        "School Type",
-        choices = c(
-          "Public" = "1",
-          "Private" = "2",
-          "For-profit" = "3"
-        )
-      )
-    ), column(
-      9,
-      htmlOutput("boxPlot"),
-      tabsetPanel(
-        type = "tabs",
-        tabPanel(
-          "Rates",
-          plotOutput("rates_plot", width = "800px", height = "400px")
-        ),
-        tabPanel(
-          "Degrees",
-          plotOutput("degs_plot", width = "800px", height = "400px")
-        )
-      )
-    )),
+    
     
     fluidRow(column(
       3,
@@ -87,22 +113,6 @@ shinyUI(dashboardPage(
         )
       )
     ), column(9, plotlyOutput("densityPlot"))),
-    fluidRow(
-      column(
-        4,
-        selectizeInput(
-          inputId = "mapval",
-          #add dropdown menu for user to select data to map
-          label = "Choose Value to Map:",
-          choices = c('Cost', 'Debt', 'Earnings'),
-          selected = 'Cost'
-        )
-      ),
-      column(4, infoBoxOutput("maxBox")),
-      tags$style("#maxBox {width:300px; height:50px;}"),
-      column(4, infoBoxOutput("minBox")),
-      tags$style("#minBox {width:300px;}")
-    ),
-    fluidRow(leafletOutput("mymap"))
+    
   )
 ))

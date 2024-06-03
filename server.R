@@ -11,52 +11,112 @@ library(dplyr)
 library(forcats)
 library(tidyr)
 
+undergrad_data<- read.csv("/Users/nhuvo/Desktop/MyShiny/undergrad.csv")
 function(input, output) {
-  # Create datatable
-  output$table <- DT::renderDataTable({
-    a = which(colnames(undergrad_table) == input$selected) - 1 #Find index of column to sort on based on input
-    
-    dtoptions = if (a == 2) {
-      (list(
-        dom = 'tipr',
-        pageLength = 25,
-        order = list(list(a , 'asc'))
-      )) #Sort ascending if admission rate is selected
-    } else {
-      (list(
-        dom = 'tipr',
-        pageLength = 25,
-        order = list(list(a , 'desc'))
-      )) #Otherwise sort by ascending
+  #1. Map
+  mymap_data <- undergrad_data
+  
+  output$map <- renderLeaflet({
+    selected_vars <- input$variables
+    base_map <- mymap_data %>%
+      filter(!is.na(long), !is.na(lat)) %>%
+      leaflet() %>%
+      setView(lng = -98.5795, lat = 39.8283, zoom = 4) %>%
+      addTiles()
+    base_map <- base_map %>%
+      addControl(html = '<h5 style="margin: 2px; padding: 1px; color: #555;font-weight: bold; background-color: white;">Educational Data: Cost, Debt, and Earnings by School Type</h5>', position = "topright")
+    if ("avg_cost" %in% selected_vars) {
+      base_map <- base_map %>%
+        addCircleMarkers(
+          ~long, ~lat, radius = ~avg_cost / 10000 * input$size,
+          fillColor = "orange", fillOpacity = ~avg_cost / max(mymap_data$avg_cost, na.rm = TRUE),
+          stroke = TRUE, weight = 1, color = "orange",
+          popup = ~paste0(college, "<br>Average Cost: $", avg_cost)
+        )
     }
     
-    datatable(undergrad_table, options = dtoptions, rownames = FALSE) %>%
-      formatStyle(
-        input$selected,
-        color = 'darkslategray',
-        background = "darkturquoise",
-        fontWeight = 'bold'
-      ) %>%
-      formatCurrency(
-        c(
-          'Average Total Cost',
-          'Average Tuition',
-          'Median Debt',
-          'Median Earnings'
-        ),
-        digits = 0
-      ) %>%
-      formatPercentage(c(
-        'Admission Rate',
-        'Students With Loans',
-        'Comp Sci Majors',
-        'Math Majors'
-      ),
-      1)
+    if ("md_debt" %in% selected_vars) {
+      base_map <- base_map %>%
+        addCircleMarkers(
+          ~long, ~lat, radius = ~md_debt / 10000 * input$size,
+          fillColor = "red", fillOpacity = ~md_debt / max(mymap_data$md_debt, na.rm = TRUE),
+          stroke = TRUE, weight = 1, color = "red",
+          popup = ~paste0(college, "<br>Median Debt: $", md_debt)
+        )
+    }
+    
+    if ("md_earnings_10" %in% selected_vars) {
+      base_map <- base_map %>%
+        addCircleMarkers(
+          ~long, ~lat, radius = ~md_earnings_10 / 10000 * input$size,
+          fillColor = "green", fillOpacity = ~md_earnings_10 / max(mymap_data$md_earnings_10, na.rm = TRUE),
+          stroke = TRUE, weight = 1, color = "green",
+          popup = ~paste0(college, "<br>Median Earnings (10 years): $", md_earnings_10)
+        )
+    }
+    
+    base_map
   })
   
+  #2. Boxplot
+  boxplot_data = undergrad_data
   
-  # Select columns from data to be used in scatterplot
+  # convert to numeric
+  boxplot_data[] <- lapply(boxplot_data, function(x)
+    as.numeric(as.character(x)))
+  
+  # get rete and deg group
+  rates <- c("adm_rate", "default_rate", "repay_rate", "pct_25k")
+  degs <- c("comp_deg", "eng_deg", "engtech_deg", "math_deg", "sci_deg")
+  
+  # label map
+  labels_map <- c(
+    adm_rate = "Admission Rate",
+    pct_25k = "Percent Earning Over 25K",
+    default_rate = "Default Rate",
+    repay_rate = "Repayment Rate",
+    comp_deg = "Completion Degree",
+    eng_deg = "Engineering Degree",
+    engtech_deg = "Engineering Tech Degree",
+    math_deg = "Mathematics Degree",
+    sci_deg = "Science Degree"
+  )
+  
+  #Plot rates_plot
+  
+  output$rates_plot <- renderPlot({
+    filtered_data <- boxplot_data %>%
+      filter(school_type == input$schoolType) %>%
+      pivot_longer(cols = rates,
+                   names_to = "variable",
+                   values_to = "value")
+    
+    ggplot(filtered_data, aes(x = value, y = fct_reorder(variable, value))) +
+      geom_boxplot(fill = "skyblue", orientation = "y") +
+      labs(title = "Comparative Analysis of Admission, Default, and Repayment Rates",
+           x = "Values", y = "") +
+      scale_y_discrete(labels = labels_map) +
+      theme_minimal()+
+      theme(plot.title = element_text(face = "bold"))
+  })
+  #Plot degs_plot
+  output$degs_plot <- renderPlot({
+    filtered_data <- boxplot_data %>%
+      filter(school_type == input$schoolType) %>%
+      pivot_longer(cols = degs,
+                   names_to = "variable",
+                   values_to = "value")
+    
+    ggplot(filtered_data, aes(x = value, y = fct_reorder(variable, value))) +
+      geom_boxplot(fill = "pink", orientation = "y") +
+      labs(title = "Distribution of Degrees in Different Disciplines",
+           x = "Values", y = "") +
+      scale_y_discrete(labels = labels_map) +
+      theme_minimal()+
+      theme(plot.title = element_text(face = "bold"))
+  })
+  
+  # 3. Scatterplot
   scatter_data = undergrad_data[, c("college",
                                     "school_type",
                                     "adm_rate",
@@ -123,62 +183,7 @@ function(input, output) {
     gvisScatterChart(filtered_scatter2, options = my_options)
   })
   
-  
-  #Boxplot
-  boxplot_data = undergrad_data
-  
-  # convert to numeric
-  boxplot_data[] <- lapply(boxplot_data, function(x)
-    as.numeric(as.character(x)))
-  
-  # get rete and deg group
-  rates <- c("adm_rate", "default_rate", "repay_rate", "pct_25k")
-  degs <- c("comp_deg", "eng_deg", "engtech_deg", "math_deg", "sci_deg")
-  
-  # label map
-  labels_map <- c(
-    adm_rate = "Admission Rate",
-    pct_25k = "Percent Earning Over 25K",
-    default_rate = "Default Rate",
-    repay_rate = "Repayment Rate",
-    comp_deg = "Completion Degree",
-    eng_deg = "Engineering Degree",
-    engtech_deg = "Engineering Tech Degree",
-    math_deg = "Mathematics Degree",
-    sci_deg = "Science Degree"
-  )
-  
-  
-  #Plot rates_plot
-  output$rates_plot <- renderPlot({
-    filtered_data <- boxplot_data %>%
-      filter(school_type == input$schoolType) %>%
-      pivot_longer(cols = rates,
-                   names_to = "variable",
-                   values_to = "value")
-    
-    ggplot(filtered_data, aes(x = value, y = fct_reorder(variable, value))) +
-      geom_boxplot(fill = "skyblue", orientation = "y") +
-      labs(title = "Rates", x = "Values", y = "") +
-      scale_y_discrete(labels = labels_map) +
-      theme_minimal()
-  })
-  #Plot degs_plot
-  output$degs_plot <- renderPlot({
-    filtered_data <- boxplot_data %>%
-      filter(school_type == input$schoolType) %>%
-      pivot_longer(cols = degs,
-                   names_to = "variable",
-                   values_to = "value")
-    
-    ggplot(filtered_data, aes(x = value, y = fct_reorder(variable, value))) +
-      geom_boxplot(fill = "pink", orientation = "y") +
-      labs(title = "Degrees", x = "Values", y = "") +
-      scale_y_discrete(labels = labels_map) +
-      theme_minimal()
-  })
-  
-  # Density plot
+  # 4. Density plot
   # Prepare Dataset
   density_data = undergrad_data %>% select(
     .,
@@ -190,6 +195,7 @@ function(input, output) {
     `Average Student Debt` = md_debt,
     `Average Earnings after 10 Years` = md_earnings_10
   )
+  density_data$`Loan Repayment Rate` <- as.numeric(gsub("%", "", density_data$`Loan Repayment Rate`)) / 100
   
   output$densityPlot <- renderPlotly({
     school1 <- density_data[which(density_data$school_type == "1"), ] # group by school type
@@ -254,74 +260,4 @@ function(input, output) {
       )
   })
   
-  
-  # Map
-  # First, ensure the data is correctly converted to numeric where expected
-  undergrad_data2 <- undergrad_data %>%
-    mutate(
-      md_debt = as.numeric(as.character(md_debt)),
-      avg_cost = as.numeric(as.character(avg_cost)),
-      md_earnings_10 = as.numeric(as.character(md_earnings_10)),
-      default_rate = as.numeric(as.character(default_rate))
-    )
-  # Calculate summary statistics
-  cost_by_state <- undergrad_data %>%
-    group_by(state) %>%
-    summarise(
-      Debt = round(mean(md_debt, na.rm = TRUE)),
-      Cost = round(mean(avg_cost, na.rm = TRUE)),
-      Earnings = round(mean(md_earnings_10, na.rm = TRUE)),
-      Default = round(mean(default_rate, na.rm = TRUE), 2)
-    ) %>%
-    ungroup()
-  
-  # Fix the labels
-  cost_by_state$labels <- state.name[match(cost_by_state$state, state.abb)]
-  
-  # Handle the mapping
-  states_map <- map_data("state") # Load US states map data
-  # Merge your data with the map data
-  map_data <- merge(states_map, cost_by_state, by.x = "region", by.y = "labels")
-  
-  output$mymap <- renderLeaflet({
-    leaflet(data = map_data) %>%
-      addProviderTiles("Esri.WorldTopoMap") %>%
-      addPolygons(
-        fillColor = ~colorBin(palette = c('#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15'),
-                              domain = Cost, bins = 6)(Cost),
-        fillOpacity = 0.7,
-        color = "white",
-        weight = 1,
-        highlightOptions(weight = 5, color = "#666", dashArray = "", fillOpacity = 0.7, bringToFront = TRUE),
-        label = ~paste(labels, ": $", Cost),
-        labelOptions = labelOptions(direction = "auto")
-      ) %>%
-      addLegend(pal = colorBin(palette = c('#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15'), domain = Cost, bins = 6),
-                values = ~Cost, title = "Median Cost", opacity = 1.0, labFormat = labelFormat(prefix = "$"))
-  })
-  
-  # Update infoBox implementation to new standards
-  output$maxBox <- renderInfoBox({
-    max_value <- max(cost_by_state[[input$mapval]], na.rm = TRUE)
-    max_state <- cost_by_state$labels[which.max(cost_by_state[[input$mapval]])]
-    infoBox(
-      title = paste("Highest", input$mapval),
-      subtitle = max_state,
-      value = format(max_value, big.mark = ",", scientific = FALSE),
-      color = "red"
-    )
-  })
-  
-  output$minBox <- renderInfoBox({
-    min_value <- min(cost_by_state[[input$mapval]], na.rm = TRUE)
-    min_state <- cost_by_state$labels[which.min(cost_by_state[[input$mapval]])]
-    infoBox(
-      title = paste("Lowest", input$mapval),
-      subtitle = min_state,
-      value = format(min_value, big.mark = ",", scientific = FALSE),
-      color = "green"
-    )
-  })
-  
-
 }
