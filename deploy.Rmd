@@ -1,0 +1,19 @@
+```{r}
+#install.packages("shiny")
+#install.packages("rsconnect")
+```
+
+```{r}
+library(rsconnect)
+
+```
+
+```{r}
+rsconnect::setAccountInfo(name='vodiepnhu',
+			  token='56CDE33EA065829BE5EBC456DD8F7633',
+			  secret='gB1H8eJCeBzAtNqe4zjI0alQZaAkvlSwYF7zoUtp')
+```
+
+```{r}
+rsconnect::deployApp('/Users/nhuvo/Desktop/MyShiny')
+```

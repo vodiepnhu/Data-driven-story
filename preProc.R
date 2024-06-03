@@ -1,6 +1,7 @@
 library(dplyr)
 
-scorecard_data <- read.csv("Most-Recent-Cohorts-Institution.csv", stringsAsFactors = FALSE)
+#Read in college scorecard data
+scorecard_data <- read.csv("~/Most_Recent_Cohorts.csv", stringsAsFactors = FALSE)
 
 # Filter out only schools that are predominantly bachelor's degree providing
 # Get rid of mischaracterized schools - we only want schools that offer bachelor's degrees
@@ -37,10 +38,9 @@ undergrad$math_deg = as.numeric(undergrad$math_deg)
 undergrad$sci_deg = as.numeric(undergrad$sci_deg)
 undergrad$school_type = as.factor(undergrad$school_type)
 
-# Remove null or suppressed median earnings
+# Remove rows where median earnings is null or suppressed
 undergrad = undergrad %>% filter(., md_earnings_10 != "NULL") 
 undergrad = undergrad %>% filter(., md_earnings_10 != "PrivacySuppressed")
 
 # Save new file as rds file
-saveRDS(undergrad, file="data.Rda")
-
+saveRDS(undergrad, file="undergrad.Rda")

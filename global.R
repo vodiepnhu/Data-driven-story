@@ -1,7 +1,7 @@
 library(dplyr)
 
 # Read pre-processed file into global environment
-undergrad_data = readRDS(file = "./data.Rda")
+undergrad_data = readRDS(file = "./undergrad.Rda")
 
 
 # Select and rename columns to create df for user interface datatable

@@ -10,70 +10,99 @@ library(plotly)
 
 shinyUI(dashboardPage(
   skin = "blue",
-  header = dashboardHeader(
-    title = tagList(
-      shiny::tags$img(src = "logo.png", height = "50px", style = "padding: 10px;")
-    ),
+  dashboardHeader(
+    title = tags$img(src = "https://vinuni.edu.vn/wp-content/uploads/2024/04/logo-VInUni_ngang-1.png", height = "30px"),
     titleWidth = 250
   ),
-  sidebar = dashboardSidebar(disable = TRUE),  # Provide an empty sidebar and disable it
-  body = dashboardBody(
+  dashboardSidebar(disable = TRUE),
+  dashboardBody(
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
     ),
-    tabItem(tabName = "scatter",
-            fluidRow(
-              column(3,  # Inputs column
-                     selectizeInput(inputId = "school_type", 
-                                    label = "School Type",
-                                    choices = c('All','Public', 'Private Non-Profit', 'Private For-Profit')),
-                     sliderInput("pop", "School Size",
-                                 min = 0, max = 55000, value = c(0, 55000), step = 5000),
-                     sliderInput("adm_rate", "Rate of Admissions",
-                                 min = 0, max = 1, value = c(0, 1), step = .05),
-                     
-                     sliderInput("year", "Year",
-                                 min = 1996, max = 2022, value = c(1996, 2022), step = 1),
-              ),
-              column(9,  # Output column
-                     htmlOutput("scatterPlot")  # Ensure the plot output ID matches the server code
-              )
-            ),
-      tabItem(
-              tabName = "boxplot",
-              fluidRow(
-                column(
-                  12, 
-                  div(
-                    style = "height: 200px; background-color: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center;", 
-                    h4("Box plot - Content under development...")
-                  )
-                )
-              ),
-      
-      tabItem(tabName = "data",
-              fluidRow(
-              column(3,  # Inputs column
-                      selectizeInput(inputId = "density", #add dropdown
-                                     label = "Choose Value to Plot:",
-                                     choices = c("Median Family Income", "Students on Loans (%)", "Median Debt",
-                                                 "Default Rate (%)", "Repayment Rate", "Median Earnings")),
-                     sliderInput("year", "Year",
-                                 min = 1996, max = 2022, value = c(1996, 2022), step = 1),
-              ),
-              
-              column(9, # Output column
-                     plotlyOutput("densityPlot")))),  #add density chart
+    fluidRow(
+      column(
+        3,
+        selectizeInput(
+          inputId = "school_type",
+          label = "School Type",
+          choices = c('All', 'Public', 'Private Non-Profit', 'Private For-Profit')
+        ),
+        sliderInput(
+          "pop",
+          "School Size",
+          min = 0,
+          max = 55000,
+          value = c(0, 55000),
+          step = 5000
+        ),
+        sliderInput(
+          "adm_rate",
+          "Rate of Admissions",
+          min = 0,
+          max = 1,
+          value = c(0, 1),
+          step = .05
+        )
+      ),
+      column(9, htmlOutput("scatterPlot"))
+    ),
+    fluidRow(column(
+      3, selectInput(
+        "schoolType",
+        "School Type",
+        choices = c(
+          "Public" = "1",
+          "Private" = "2",
+          "For-profit" = "3"
+        )
+      )
+    ), column(
+      9,
+      htmlOutput("boxPlot"),
+      tabsetPanel(
+        type = "tabs",
+        tabPanel(
+          "Rates",
+          plotOutput("rates_plot", width = "800px", height = "400px")
+        ),
+        tabPanel(
+          "Degrees",
+          plotOutput("degs_plot", width = "800px", height = "400px")
+        )
+      )
+    )),
     
-      tabItem(tabName = "map",
-            fluidRow(column(4, selectizeInput(inputId = "mapval", #add dropdown menu
-                                              label = "Choose Value to Map:",
-                                              choices = c('Cost','Debt', 'Earnings'),
-                                              selected = 'Cost')),
-                     column(4, infoBoxOutput("maxBox")), tags$style("#maxBox {width:300px; height:50px;}"),
-                     column(4, infoBoxOutput("minBox")), tags$style("#minBox {width:300px;}")),
-            fluidRow(leafletOutput("mymap"))) #add map
-
-      ))
+    fluidRow(column(
+      3,
+      selectizeInput(
+        inputId = "density",
+        label = "Choose Value to Plot:",
+        choices = c(
+          "% Students with Loans",
+          "% Loan Default Rate",
+          "Loan Repayment Rate",
+          "Average Family Income",
+          "Average Student Debt",
+          "Average Earnings after 10 Years"
+        )
+      )
+    ), column(9, plotlyOutput("densityPlot"))),
+    fluidRow(
+      column(
+        4,
+        selectizeInput(
+          inputId = "mapval",
+          #add dropdown menu for user to select data to map
+          label = "Choose Value to Map:",
+          choices = c('Cost', 'Debt', 'Earnings'),
+          selected = 'Cost'
+        )
+      ),
+      column(4, infoBoxOutput("maxBox")),
+      tags$style("#maxBox {width:300px; height:50px;}"),
+      column(4, infoBoxOutput("minBox")),
+      tags$style("#minBox {width:300px;}")
+    ),
+    fluidRow(leafletOutput("mymap"))
   )
 ))
